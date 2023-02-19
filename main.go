@@ -117,11 +117,34 @@ func sendbyte(conn net.Conn, packet []byte) {
 
 // Sunucudan gelen cevabı işler
 func handleResponse(conn net.Conn) {
-	buffer := make([]byte, 1024)
+	buffer := make([]byte, 4096)
 	n, err := conn.Read(buffer)
 	if err != nil {
 		log.Fatalf("Failed to read response: %v", err)
 	}
-	response := hex.EncodeToString(buffer[:n])
-	log.Printf("Received response: %s", response)
+	response := recognizePacket(buffer[:n])
+	//response := hex.EncodeToString(buffer[:n])
+	//log.Printf("Received response: %s", response)
+}
+
+func recognizePacket(data []byte) ([]byte, error) { //test read pkg example with chat types
+pkgType = utils.BytesToInt(data[4:6], false)
+
+	switch pkgType {
+	case 28929: // normal chat
+		charlen:=  len(data[6])
+		charname := string(data[7:charlen])
+		messageLen := len(data[7+charlen]
+		message := string(data[8+charlen : messageLen+8])
+		log.Printf("Received message: [ %s ]: %s",charname, message)
+	case 28942: //shout
+		/*index := 6
+		messageLen := int(data[index])
+		index++
+
+		//h.chatType = 28942
+		message = string(data[index : index+messageLen])
+		log.Printf("Received Shout message: %s", message)*/
+	}
+	return nil, nil
 }
