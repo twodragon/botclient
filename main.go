@@ -61,10 +61,25 @@ func main() {
 	start := utils.Packet{0xaa, 0x55, 0x03, 0x00, 0x62, 0x02, 0x00, 0x55, 0xaa} //oyunun baslaması için gerekli
 	sendbyte(conn, start)
 
-	cordgo := "aa552100220100809c43000a2143009c814000809c4300002343009c81405a000000a0400055aa"
-	sendPacket(conn, cordgo)
+	/*coordinate := &utils.Location{X: utils.BytesToFloat(data[6:10], true), Y: utils.BytesToFloat(data[10:14], true)}
+	target := &utils.Location{X: utils.BytesToFloat(data[18:22], true), Y: utils.BytesToFloat(data[22:26], true)}*/
+	/*cordgo := "aa552100220100809c43000a2143009c814000809c4300002343009c81405a000000a0400055aa"
+	sendPacket(conn, cordgo)*/
+	movement := utils.Packet{0xaa, 0x55, 0x21, 0x00, 0x22, 0x01,
+		0x00, 0x9c, 0x81, 0x40,
+		0x00, 0x9c, 0x81, 0x40, 0x5a, 0x00, 0x00, 0x00, 0xa0, 0x40, 0x00, 0x55, 0xaa}
+	coordinatex := 313.0
+	coordinatey := 161.0
+	targetx := 313.0
+	targety := 163.0
+	movement.Insert(utils.FloatToBytes(coordinatex, 4, true), 6)  // coordinate-x
+	movement.Insert(utils.FloatToBytes(coordinatey, 4, true), 10) // coordinate-y
+	movement.Insert(utils.FloatToBytes(targetx, 4, true), 18)     // target-x
+	movement.Insert(utils.FloatToBytes(targety, 4, true), 22)     // target-y
+	sendbyte(conn, movement)
+	sendbyte(conn, ping)
 	silahcikart := utils.Packet{0xaa, 0x55, 0x02, 0x00, 0x43, 0x01, 0x55, 0xaa} //silahı ele al
-	sendPacket(conn, string(silahcikart))
+	sendbyte(conn, silahcikart)
 
 	for {
 		handleResponse(conn)
