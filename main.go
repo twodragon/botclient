@@ -16,6 +16,9 @@ func main() {
 	cid := uint64(20)
 	username := "admin"
 	password := "zz"
+
+	Location := utils.ConvertPointToLocation("(313.0,161.0)")
+	Target := utils.ConvertPointToLocation("(313.0,163.0)")
 	// Sunucuya bağlan
 	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
@@ -68,14 +71,14 @@ func main() {
 	movement := utils.Packet{0xaa, 0x55, 0x21, 0x00, 0x22, 0x01,
 		0x00, 0x9c, 0x81, 0x40,
 		0x00, 0x9c, 0x81, 0x40, 0x5a, 0x00, 0x00, 0x00, 0xa0, 0x40, 0x00, 0x55, 0xaa}
-	coordinatex := 313.0
-	coordinatey := 161.0
-	targetx := 313.0
-	targety := 163.0
-	movement.Insert(utils.FloatToBytes(coordinatex, 4, true), 6)  // coordinate-x
-	movement.Insert(utils.FloatToBytes(coordinatey, 4, true), 10) // coordinate-y
-	movement.Insert(utils.FloatToBytes(targetx, 4, true), 18)     // target-x
-	movement.Insert(utils.FloatToBytes(targety, 4, true), 22)     // target-y
+
+	coordinate := &utils.Location{X: Location.X, Y: Location.Y}
+	target := &utils.Location{X: Target.X, Y: Target.Y}
+
+	movement.Insert(utils.FloatToBytes(coordinate.X, 4, true), 6)  // coordinate-x
+	movement.Insert(utils.FloatToBytes(coordinate.Y, 4, true), 10) // coordinate-y
+	movement.Insert(utils.FloatToBytes(target.X, 4, true), 18)     // target-x
+	movement.Insert(utils.FloatToBytes(target.Y, 4, true), 22)     // target-y
 	sendbyte(conn, movement)
 	sendbyte(conn, ping)
 	silahcikart := utils.Packet{0xaa, 0x55, 0x02, 0x00, 0x43, 0x01, 0x55, 0xaa} //silahı ele al
