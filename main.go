@@ -67,7 +67,7 @@ func main() {
 	/*coordinate := &utils.Location{X: utils.BytesToFloat(data[6:10], true), Y: utils.BytesToFloat(data[10:14], true)}
 	target := &utils.Location{X: utils.BytesToFloat(data[18:22], true), Y: utils.BytesToFloat(data[22:26], true)}*/
 	/*cordgo := "aa552100220100809c43000a2143009c814000809c4300002343009c81405a000000a0400055aa"
-	sendPacket(conn, cordgo)*/
+	sendstring(conn, cordgo)*/
 	movement := utils.Packet{0xaa, 0x55, 0x21, 0x00, 0x22, 0x01,
 		0x00, 0x9c, 0x81, 0x40,
 		0x00, 0x9c, 0x81, 0x40, 0x5a, 0x00, 0x00, 0x00, 0xa0, 0x40, 0x00, 0x55, 0xaa}
@@ -90,7 +90,7 @@ func main() {
 
 }
 
-func sendPacket(conn net.Conn, packet string) {
+func sendstring(conn net.Conn, packet string) {
 	data, err := hex.DecodeString(packet)
 	if err != nil {
 		fmt.Println("Paket dönüştürülürken hata oluştu:", err)
@@ -123,6 +123,9 @@ func handleResponse(conn net.Conn) {
 		log.Fatalf("Failed to read response: %v", err)
 	}
 	response := recognizePacket(buffer[:n])
+	if response == 0 {
+	return
+	}
 	//response := hex.EncodeToString(buffer[:n])
 	//log.Printf("Received response: %s", response)
 }
