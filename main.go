@@ -144,7 +144,7 @@ pkgType = utils.BytesToInt(data[4:6], false)
 		/*index := 6
 		messageLen := int(data[index])
 		index++
-
+		//https://go.dev/play/p/fvUmlP6jcnq tool link
 		//h.chatType = 28942
 		message = string(data[index : index+messageLen])
 		log.Printf("Received Shout message: %s", message)*/
