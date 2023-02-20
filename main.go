@@ -164,7 +164,7 @@ func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg 
 		charlen := utils.BytesToInt([]byte{data[8]}, true)
 		charname := string(data[8 : 9+charlen])
 		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
-		message := string(data[9+charlen : 11+charlen+messageLen])
+		message := string(data[10+charlen : 11+charlen+messageLen])
 		log.Printf(fmt.Sprintf(" %s: %s \n", charname, message))
 		//log.Printf("charlen= %d messageLen=%d \n % X", charlen, messageLen, data)
 	case 28942: //shout
@@ -174,7 +174,7 @@ func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg 
 		charlen := utils.BytesToInt([]byte{data[6]}, true)
 		charname := string(data[6 : 7+charlen])
 		messageLen := utils.BytesToInt([]byte{data[7+charlen]}, true)
-		message := string(data[7+charlen : 9+charlen+messageLen])
+		message := string(data[8+charlen : 9+charlen+messageLen])
 		log.Printf(" /Shout [%s]:%s\n", charname, message)
 	}
 	return nil, nil
