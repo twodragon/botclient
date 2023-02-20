@@ -10,15 +10,27 @@ import (
 	"time"
 )
 
+type Socket struct {
+	Conn net.Conn
+}
+
+var (
+	username string
+	userlen  int
+	cid      uint64
+	Location *utils.Location
+	Target   *utils.Location
+)
+
 func main() {
 	// Bağlanılacak sunucunun IP adresi ve portu karakter id username ve parolası
 	serverAddr := "127.0.0.1:4515"
-	cid := uint64(20)
-	username := "admin"
+	cid = 20
+	username = "admin"
 	password := "zz"
 
-	Location := utils.ConvertPointToLocation("(313.0,161.0)")
-	Target := utils.ConvertPointToLocation("(313.0,163.0)")
+	Location = utils.ConvertPointToLocation("(313.0,161.0)")
+	Target = utils.ConvertPointToLocation("(313.0,163.0)")
 	// Sunucuya bağlan
 	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
@@ -26,14 +38,16 @@ func main() {
 		return
 	}
 
+	s := &Socket{Conn: conn}
+	//var s *Socket
 	// İlk paketi gönder
 	pkt := utils.Packet{0xAA, 0x55, 0x01, 0x00, 0x38, 0x55, 0xAA}
-	sendbyte(conn, pkt)
+	s.sendbyte(pkt)
 
 	// İkinci paketi gönder
 
 	login := utils.Packet{0xaa, 0x55, 0xff, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x40, 0x00, 0x00, 0x55, 0xaa}
-	userlen := len(username)
+	userlen = len(username)
 	login.Insert([]byte{byte(userlen)}, 9)
 	login.Insert([]byte(username), 10)
 	data := []byte(password)
@@ -42,50 +56,9 @@ func main() {
 	password = fmt.Sprintf("%X", password)
 
 	login.Insert([]byte(password), userlen+11)
-	sendbyte(conn, login)
-	w8 := utils.Packet{0xaa, 0x55, 0x02, 0x00, 0x00, 0x02, 0x55, 0xaa}
-	sendbyte(conn, w8)
-
-	serversec := utils.Packet{0xaa, 0x55, 0x06, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x55, 0xaa}
-	sendbyte(conn, serversec)
-
-	usersec := utils.Packet{0xaa, 0x55, 0x0e, 0x00, 0x01, 0x01, 0x01, 0x30, 0x3f, 0x87, 0x01, 0x00, 0x55, 0xaa}
-	usersec.Insert([]byte{byte(userlen)}, 6)
-	usersec.Insert([]byte(username), 7)
-	sendbyte(conn, usersec)
-
-	ping := utils.Packet{0xaa, 0x55, 0x01, 0x00, 0x18, 0x55, 0xaa}
-	sendbyte(conn, ping)
-
-	karaktersec := utils.Packet{0xaa, 0x55, 0x0d, 0x00, 0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0xaa}
-	karaktersec.Insert(utils.IntToBytes(cid, 4, true), 6)
-	sendbyte(conn, karaktersec)
-
-	start := utils.Packet{0xaa, 0x55, 0x03, 0x00, 0x62, 0x02, 0x00, 0x55, 0xaa} //oyunun baslaması için gerekli
-	sendbyte(conn, start)
-
-	/*coordinate := &utils.Location{X: utils.BytesToFloat(data[6:10], true), Y: utils.BytesToFloat(data[10:14], true)}
-	target := &utils.Location{X: utils.BytesToFloat(data[18:22], true), Y: utils.BytesToFloat(data[22:26], true)}*/
-	/*cordgo := "aa552100220100809c43000a2143009c814000809c4300002343009c81405a000000a0400055aa"
-	sendstring(conn, cordgo)*/
-	movement := utils.Packet{0xaa, 0x55, 0x21, 0x00, 0x22, 0x01,
-		0x00, 0x9c, 0x81, 0x40,
-		0x00, 0x9c, 0x81, 0x40, 0x5a, 0x00, 0x00, 0x00, 0xa0, 0x40, 0x00, 0x55, 0xaa}
-
-	coordinate := &utils.Location{X: Location.X, Y: Location.Y}
-	target := &utils.Location{X: Target.X, Y: Target.Y}
-
-	movement.Insert(utils.FloatToBytes(coordinate.X, 4, true), 6)  // coordinate-x
-	movement.Insert(utils.FloatToBytes(coordinate.Y, 4, true), 10) // coordinate-y
-	movement.Insert(utils.FloatToBytes(target.X, 4, true), 18)     // target-x
-	movement.Insert(utils.FloatToBytes(target.Y, 4, true), 22)     // target-y
-	sendbyte(conn, movement)
-	sendbyte(conn, ping)
-	silahcikart := utils.Packet{0xaa, 0x55, 0x02, 0x00, 0x43, 0x01, 0x55, 0xaa} //silahı ele al
-	sendbyte(conn, silahcikart)
-
+	s.sendbyte(login)
 	for {
-		handleResponse(conn)
+		s.handleResponse(conn)
 	}
 
 }
@@ -106,8 +79,8 @@ func sendstring(conn net.Conn, packet string) {
 	time.Sleep(time.Millisecond * 200)
 }
 
-func sendbyte(conn net.Conn, packet []byte) {
-	if _, err := conn.Write(packet); err != nil {
+func (s *Socket) sendbyte(packet []byte) {
+	if _, err := s.Conn.Write(packet); err != nil {
 		log.Printf("Packet send error: %s", err)
 		return
 	}
@@ -116,14 +89,14 @@ func sendbyte(conn net.Conn, packet []byte) {
 }
 
 // Sunucudan gelen cevabı işler
-func handleResponse(conn net.Conn) {
+func (s *Socket) handleResponse(conn net.Conn) {
 	buffer := make([]byte, 4096)
 	n, err := conn.Read(buffer)
 	if err != nil {
 		log.Fatalf("Failed to read response: %v", err)
 	}
 	//response := recognizePacket(buffer[:n])
-	response, err := recognizePacket(buffer[:n])
+	response, err := s.recognizePacket(buffer[:n])
 	if err != nil {
 		log.Println("recognize packet error:", err)
 	}
@@ -134,25 +107,75 @@ func handleResponse(conn net.Conn) {
 	//log.Printf("Received response: %s", response)
 }
 
-func recognizePacket(data []byte) ([]byte, error) { //test read pkg example with chat types
+func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg example with chat types
 	pkgType := utils.BytesToInt(data[4:6], false)
-
+	if pkgType == 19714 || pkgType == 8706 {
+		return nil, nil
+	} else {
+		log.Printf("%d", pkgType)
+	}
+	//s := &Socket{Conn: conn}
 	switch pkgType {
+
+	case 1:
+		w8 := utils.Packet{0xaa, 0x55, 0x02, 0x00, 0x00, 0x02, 0x55, 0xaa}
+		s.sendbyte(w8)
+	case 3:
+		serversec := utils.Packet{0xaa, 0x55, 0x06, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x55, 0xaa}
+		s.sendbyte(serversec)
+	case 5:
+		usersec := utils.Packet{0xaa, 0x55, 0x0e, 0x00, 0x01, 0x01, 0x01, 0x30, 0x3f, 0x87, 0x01, 0x00, 0x55, 0xaa}
+		usersec.Insert([]byte{byte(userlen)}, 6)
+		usersec.Insert([]byte(username), 7)
+		s.sendbyte(usersec)
+	case 258:
+		karaktersec := utils.Packet{0xaa, 0x55, 0x0d, 0x00, 0x01, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55, 0xaa}
+		karaktersec.Insert(utils.IntToBytes(cid, 4, true), 6)
+		s.sendbyte(karaktersec)
+	case 261:
+		start := utils.Packet{0xaa, 0x55, 0x03, 0x00, 0x62, 0x02, 0x00, 0x55, 0xaa} //oyunun baslaması için gerekli
+		s.sendbyte(start)
+	case 8706: //yanına gelen karakterlerin movementi
+	case 29185:
+		movement := utils.Packet{0xaa, 0x55, 0x21, 0x00, 0x22, 0x01,
+			0x00, 0x9c, 0x81, 0x40,
+			0x00, 0x9c, 0x81, 0x40, 0x5a, 0x00, 0x00, 0x00, 0xa0, 0x40, 0x00, 0x55, 0xaa}
+
+		coordinate := &utils.Location{X: Location.X, Y: Location.Y}
+		target := &utils.Location{X: Target.X, Y: Target.Y}
+
+		movement.Insert(utils.FloatToBytes(coordinate.X, 4, true), 6)  // coordinate-x
+		movement.Insert(utils.FloatToBytes(coordinate.Y, 4, true), 10) // coordinate-y
+		movement.Insert(utils.FloatToBytes(target.X, 4, true), 18)     // target-x
+		movement.Insert(utils.FloatToBytes(target.Y, 4, true), 22)     // target-y
+		s.sendbyte(movement)
+		ping := utils.Packet{0xaa, 0x55, 0x01, 0x00, 0x18, 0x55, 0xaa}
+		s.sendbyte(ping)
+
+		/*coordinate := &utils.Location{X: utils.BytesToFloat(data[6:10], true), Y: utils.BytesToFloat(data[10:14], true)}
+		target := &utils.Location{X: utils.BytesToFloat(data[18:22], true), Y: utils.BytesToFloat(data[22:26], true)}*/
+		/*cordgo := "aa552100220100809c43000a2143009c814000809c4300002343009c81405a000000a0400055aa"
+		sendstring(conn, cordgo)*/
+
+		s.sendbyte(ping)
+		silahcikart := utils.Packet{0xaa, 0x55, 0x02, 0x00, 0x43, 0x01, 0x55, 0xaa} //silahı ele al
+		s.sendbyte(silahcikart)
 	case 28929: // normal chat
 		charlen := utils.BytesToInt([]byte{data[8]}, true)
 		charname := string(data[8 : 9+charlen])
 		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
 		message := string(data[9+charlen : 11+charlen+messageLen])
-		log.Printf("Received message: [%s]:%s", charname, message)
+		log.Printf(fmt.Sprintf(" %s: %s \n", charname, message))
 		//log.Printf("charlen= %d messageLen=%d \n % X", charlen, messageLen, data)
 	case 28942: //shout
-		/*index := 6
-		messageLen := int(data[index])
-		index++
+
 		//https://go.dev/play/p/fvUmlP6jcnq tool link
-		//h.chatType = 28942
-		message = string(data[index : index+messageLen])
-		log.Printf("Received Shout message: %s", message)*/
+
+		charlen := utils.BytesToInt([]byte{data[6]}, true)
+		charname := string(data[6 : 7+charlen])
+		messageLen := utils.BytesToInt([]byte{data[7+charlen]}, true)
+		message := string(data[7+charlen : 9+charlen+messageLen])
+		log.Printf(" /Shout [%s]:%s\n", charname, message)
 	}
 	return nil, nil
 }
