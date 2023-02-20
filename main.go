@@ -122,24 +122,29 @@ func handleResponse(conn net.Conn) {
 	if err != nil {
 		log.Fatalf("Failed to read response: %v", err)
 	}
-	response := recognizePacket(buffer[:n])
-	if response == 0 {
-	return
+	//response := recognizePacket(buffer[:n])
+	response, err := recognizePacket(buffer[:n])
+	if err != nil {
+		log.Println("recognize packet error:", err)
+	}
+	if len(response) < 0 {
+		return
 	}
 	//response := hex.EncodeToString(buffer[:n])
 	//log.Printf("Received response: %s", response)
 }
 
 func recognizePacket(data []byte) ([]byte, error) { //test read pkg example with chat types
-pkgType = utils.BytesToInt(data[4:6], false)
+	pkgType := utils.BytesToInt(data[4:6], false)
 
 	switch pkgType {
 	case 28929: // normal chat
-		charlen:=  len(data[6])
-		charname := string(data[7:charlen])
-		messageLen := len(data[7+charlen]
-		message := string(data[8+charlen : messageLen+8])
-		log.Printf("Received message: [ %s ]: %s",charname, message)
+		charlen := utils.BytesToInt([]byte{data[8]}, true)
+		charname := string(data[8 : 9+charlen])
+		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
+		message := string(data[9+charlen : 11+charlen+messageLen])
+		log.Printf("Received message: [%s]:%s", charname, message)
+		//log.Printf("charlen= %d messageLen=%d \n % X", charlen, messageLen, data)
 	case 28942: //shout
 		/*index := 6
 		messageLen := int(data[index])
