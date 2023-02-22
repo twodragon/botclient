@@ -109,12 +109,12 @@ func (s *Socket) handleResponse(conn net.Conn) {
 
 func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg example with chat types
 	pkgType := utils.BytesToInt(data[4:6], false)
-	if pkgType == 19714 || pkgType == 8706 {
+	if pkgType == 19714 || pkgType == 8706 || pkgType == 8705 || pkgType == 22809 {
 		return nil, nil
 	} else {
-		log.Printf("%d", pkgType)
+		//log.Printf("%d", pkgType)
 	}
-	//s := &Socket{Conn: conn}
+	//https://go.dev/play/p/fvUmlP6jcnq tool link
 	switch pkgType {
 
 	case 1:
@@ -135,6 +135,7 @@ func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg 
 	case 261:
 		start := utils.Packet{0xaa, 0x55, 0x03, 0x00, 0x62, 0x02, 0x00, 0x55, 0xaa} //oyunun baslaması için gerekli
 		s.sendbyte(start)
+	case 8705: //yanına gelen karakterlerin movementi
 	case 8706: //yanına gelen karakterlerin movementi
 	case 29185:
 		movement := utils.Packet{0xaa, 0x55, 0x21, 0x00, 0x22, 0x01,
@@ -157,7 +158,6 @@ func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg 
 		/*cordgo := "aa552100220100809c43000a2143009c814000809c4300002343009c81405a000000a0400055aa"
 		sendstring(conn, cordgo)*/
 
-		s.sendbyte(ping)
 		silahcikart := utils.Packet{0xaa, 0x55, 0x02, 0x00, 0x43, 0x01, 0x55, 0xaa} //silahı ele al
 		s.sendbyte(silahcikart)
 	case 28929: // normal chat
@@ -166,11 +166,30 @@ func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg 
 		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
 		message := string(data[10+charlen : 11+charlen+messageLen])
 		log.Printf(fmt.Sprintf(" %s: %s \n", charname, message))
-		//log.Printf("charlen= %d messageLen=%d \n % X", charlen, messageLen, data)
+
+	case 28930: // whisper chat
+		charlen := utils.BytesToInt([]byte{data[8]}, true)
+		charname := string(data[8 : 9+charlen])
+		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
+		message := string(data[10+charlen : 11+charlen+messageLen])
+		log.Printf(fmt.Sprintf("! %s: %s \n", charname, message))
+
+	case 28933: // roar chat
+		charlen := utils.BytesToInt([]byte{data[8]}, true)
+		charname := string(data[8 : 9+charlen])
+		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
+		message := string(data[10+charlen : 11+charlen+messageLen])
+		log.Printf(fmt.Sprintf("# %s: %s \n", charname, message))
+
+	case 28946: // valorus chat
+		charlen := utils.BytesToInt([]byte{data[6]}, true)
+		charname := string(data[6 : 7+charlen])
+		messageLen := utils.BytesToInt([]byte{data[7+charlen]}, true)
+		message := string(data[8+charlen : 9+charlen+messageLen])
+		log.Printf(fmt.Sprintf("' %s: %s \n", charname, message))
+		//log.Printf("\n % X", data)
+
 	case 28942: //shout
-
-		//https://go.dev/play/p/fvUmlP6jcnq tool link
-
 		charlen := utils.BytesToInt([]byte{data[6]}, true)
 		charname := string(data[6 : 7+charlen])
 		messageLen := utils.BytesToInt([]byte{data[7+charlen]}, true)
