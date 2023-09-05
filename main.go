@@ -184,14 +184,14 @@ func (s *Socket) recognizePacket(data []byte) ([]byte, error) { //test read pkg 
 
 	case 28930: // whisper chat
 		charlen := utils.BytesToInt([]byte{data[8]}, true)
-		charname := string(data[8 : 9+charlen])
+		charname := string(data[9 : 9+charlen])
 		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
 		message := string(data[10+charlen : 11+charlen+messageLen])
 		log.Printf(fmt.Sprintf("! %s: %s \n", charname, message))
 
 	case 28933: // roar chat
 		charlen := utils.BytesToInt([]byte{data[8]}, true)
-		charname := string(data[8 : 9+charlen])
+		charname := string(data[9 : 9+charlen])
 		messageLen := utils.BytesToInt([]byte{data[9+charlen]}, true)
 		message := string(data[10+charlen : 11+charlen+messageLen])
 		log.Printf(fmt.Sprintf("# %s: %s \n", charname, message))
