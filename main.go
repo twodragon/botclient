@@ -7,6 +7,7 @@ import (
 	"hero/utils"
 	"log"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -24,13 +25,13 @@ var (
 
 func main() {
 	// Bağlanılacak sunucunun IP adresi ve portu karakter id username ve parolası
-	serverAddr := "127.0.0.1:4515"
-	cid = 20
-	username = "admin"
-	password := "zz"
+	serverAddr := "188.132.128.230:4515"
+	cid = 1044
+	username = "id"
+	password := "şifre"
 
-	Location = utils.ConvertPointToLocation("(313.0,161.0)")
-	Target = utils.ConvertPointToLocation("(313.0,163.0)")
+	Location = ConvertPointToLocation("(313.0,161.0)")
+	Target = ConvertPointToLocation("(313.0,163.0)")
 	// Sunucuya bağlan
 	conn, err := net.Dial("tcp", serverAddr)
 	if err != nil {
@@ -86,6 +87,20 @@ func (s *Socket) sendbyte(packet []byte) {
 	}
 	fmt.Printf("Paket gönderildi: %X\n", packet)
 	time.Sleep(time.Millisecond * 200)
+}
+
+func ConvertPointToLocation(point string) *utils.Location {
+
+	location := &utils.Location{}
+	parts := strings.Split(strings.Trim(point, "()"), ",")
+	if parts[0] != "" && parts[1] != "" {
+		location.X = utils.StringToFloat64(parts[0])
+		location.Y = utils.StringToFloat64(parts[1])
+	} else {
+		location.X = 0
+		location.Y = 0
+	}
+	return location
 }
 
 // Sunucudan gelen cevabı işler
